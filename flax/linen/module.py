@@ -97,7 +97,7 @@ def _module_repr(module: 'Module', num_spaces: int = 4):
   cls = type(module)
   cls_name = cls.__name__
   rep = ''
-  attributes = {k: v for k, v in cls.__annotations__.items()
+  attributes = {k: v for k, v in cls.__dataclass_fields__.items()
                 if k not in ('parent', 'name')}
   child_modules = {k: v for k, v in module._state.children.items()  # pytype: disable=attribute-error
                    if isinstance(v, Module)}

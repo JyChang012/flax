@@ -823,6 +823,66 @@ class ModuleTest(absltest.TestCase):
     trace = mlp.apply(variables, x)
     self.assertEqual(trace, expected_trace)
 
+  def test_inherited_module_trace(self):
+
+    class Base(nn.Module):
+      output_size: int = 4
+
+    class MLP(Base):
+      act: Callable = nn.relu
+      sizes: Sequence[int] = (3, 2)
+
+      @nn.compact
+      def __call__(self, x):
+        for size in tuple(self.sizes) + (self.output_size,):
+          x = nn.Dense(size)(x)
+          x = self.act(x)
+        return repr(self)
+
+    mlp = MLP()
+    expected_trace = ("""MLP(
+    # attributes
+    output_size = 4
+    act = relu
+    sizes = (3, 2)
+    # children
+    Dense_0 = Dense(
+        # attributes
+        features = 3
+        use_bias = True
+        dtype = None
+        param_dtype = float32
+        precision = None
+        kernel_init = init
+        bias_init = zeros
+    )
+    Dense_1 = Dense(
+        # attributes
+        features = 2
+        use_bias = True
+        dtype = None
+        param_dtype = float32
+        precision = None
+        kernel_init = init
+        bias_init = zeros
+    )
+    Dense_2 = Dense(
+        # attributes
+        features = 4
+        use_bias = True
+        dtype = None
+        param_dtype = float32
+        precision = None
+        kernel_init = init
+        bias_init = zeros
+    )
+)""")
+    x = jnp.ones((1, 2))
+    trace, variables = mlp.init_with_output(random.PRNGKey(0), x)
+    self.assertEqual(trace, expected_trace)
+    trace = mlp.apply(variables, x)
+    self.assertEqual(trace, expected_trace)
+
   def test_module_apply_method(self):
 
     class Foo(nn.Module):
